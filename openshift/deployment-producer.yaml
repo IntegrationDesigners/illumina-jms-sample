@@ -28,12 +28,12 @@ spec:
             - name: SSL_KEYSTORE_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: illumina-jms-tls
+                  name: jms-config
                   key: keystore-password
             - name: SSL_TRUSTSTORE_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: illumina-jms-tls
+                  name: jms-config
                   key: truststore-password
             - name: PRODUCER_NAME
               value: "illumina-producer"
