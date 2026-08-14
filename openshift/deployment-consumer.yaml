@@ -2,7 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: illumina-jms-consumer
-  namespace: illumina-jms
   labels:
     app: illumina-jms-consumer
     app.kubernetes.io/part-of: illumina-jms
