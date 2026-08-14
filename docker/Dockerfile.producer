@@ -66,5 +66,5 @@ ENTRYPOINT ["sh", "-c", \
       -Dcom.ibm.msg.client.commonservices.trace.outputName=stdout \
       -Dcom.ibm.msg.client.commonservices.trace.level=4 \
       -Dcom.ibm.msg.client.commonservices.trace.include=com.ibm.mq.jmqi.remote') \
-   -jar /app/illumina-jms.jar \
+   -cp /app/illumina-jms.jar \
    com.illumina.demo.Producer ${PRODUCER_NAME:-illumina-producer}"]
