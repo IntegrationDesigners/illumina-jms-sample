@@ -1,0 +1,10 @@
+# Exclude everything, then explicitly allow only what the Dockerfiles need.
+
+# ── Deny all ────────────────────────────────────────────────────────────────
+**
+
+# ── Allow IBM MQ JARs (glob covers all JARs in the lib directory) ────────────
+!jar/wmq/JavaSE/lib/*.jar
+
+# ── Allow compiled application classes ───────────────────────────────────────
+!Illumina_JMS/bin/**

@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: illumina-jms-consumer
+  namespace: illumina-jms
+  labels:
+    app: illumina-jms-consumer
+    app.kubernetes.io/part-of: illumina-jms
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: illumina-jms-consumer
+  template:
+    metadata:
+      labels:
+        app: illumina-jms-consumer
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+      containers:
+        - name: consumer
+          image: <YOUR_IMAGE_REGISTRY>/illumina-jms-consumer:latest  # ← set your registry
+          imagePullPolicy: Always
+
+          env:
+            - name: SSL_KEYSTORE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: illumina-jms-tls
+                  key: keystore-password
+            - name: SSL_TRUSTSTORE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: illumina-jms-tls
+                  key: truststore-password
+
+          volumeMounts:
+            - name: tls-config
+              mountPath: /app/config
+              readOnly: true
+
+          # ── Graceful shutdown ────────────────────────────────────────────
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sh", "-c", "sleep 5"]
+
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+
+          # ── Liveness: restart pod if JVM hangs completely ────────────────
+          livenessProbe:
+            exec:
+              command: ["sh", "-c", "pgrep java > /dev/null"]
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            failureThreshold: 3
+
+      terminationGracePeriodSeconds: 30
+
+      volumes:
+        - name: tls-config
+          secret:
+            secretName: illumina-jms-tls
+            items:
+              - key: keystore.jks
+                path: keystore.jks
+              - key: truststore.jks
+                path: truststore.jks
+              - key: ccdt.json
+                path: ccdt.json

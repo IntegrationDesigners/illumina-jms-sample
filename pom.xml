@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.illumina.demo</groupId>
+  <artifactId>illumina-jms-sample</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+  <packaging>jar</packaging>
+
+  <name>Illumina JMS Sample</name>
+  <description>IBM MQ JMS producer/consumer demo targeting a uniform cluster on OpenShift</description>
+  <url>https://github.com/IntegrationDesigners/illumina-jms-sample</url>
+
+  <properties>
+    <java.version>17</java.version>
+    <maven.compiler.release>17</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <!-- IBM MQ client — published to Maven Central by IBM -->
+    <ibm.mq.version>9.4.2.0</ibm.mq.version>
+  </properties>
+
+  <dependencies>
+    <!-- IBM MQ all-in-one client (includes JMS API, BC crypto, CCDT support) -->
+    <dependency>
+      <groupId>com.ibm.mq</groupId>
+      <artifactId>com.ibm.mq.allclient</artifactId>
+      <version>${ibm.mq.version}</version>
+    </dependency>
+    <!-- Jakarta JMS API (transitively pulled by allclient, declared for IDE clarity) -->
+    <dependency>
+      <groupId>jakarta.jms</groupId>
+      <artifactId>jakarta.jms-api</artifactId>
+      <version>3.1.0</version>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <!-- Compiler -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.13.0</version>
+      </plugin>
+
+      <!-- Fat JAR: bundles all runtime dependencies into one executable jar -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <version>3.7.1</version>
+        <configuration>
+          <descriptorRefs>
+            <descriptorRef>jar-with-dependencies</descriptorRef>
+          </descriptorRefs>
+          <!-- No specific mainClass here: both Producer and Consumer are in the
+               same jar; the Dockerfile ENTRYPOINT selects the right one. -->
+          <appendAssemblyId>false</appendAssemblyId>
+          <finalName>illumina-jms</finalName>
+        </configuration>
+        <executions>
+          <execution>
+            <id>make-assembly</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>

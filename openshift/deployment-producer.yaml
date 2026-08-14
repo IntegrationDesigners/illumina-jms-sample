@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: illumina-jms-producer
+  namespace: illumina-jms
+  labels:
+    app: illumina-jms-producer
+    app.kubernetes.io/part-of: illumina-jms
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: illumina-jms-producer
+  template:
+    metadata:
+      labels:
+        app: illumina-jms-producer
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+      containers:
+        - name: producer
+          image: <YOUR_IMAGE_REGISTRY>/illumina-jms-producer:latest  # ← set your registry
+          imagePullPolicy: Always
+
+          env:
+            - name: SSL_KEYSTORE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: illumina-jms-tls
+                  key: keystore-password
+            - name: SSL_TRUSTSTORE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: illumina-jms-tls
+                  key: truststore-password
+            - name: PRODUCER_NAME
+              value: "illumina-producer"
+
+          volumeMounts:
+            - name: tls-config
+              mountPath: /app/config
+              readOnly: true
+
+          # ── Graceful shutdown: SIGTERM triggers JVM shutdown hooks ───────
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sh", "-c", "sleep 5"]
+
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+
+          # ── Liveness: restart pod if JVM hangs completely ────────────────
+          livenessProbe:
+            exec:
+              command: ["sh", "-c", "pgrep java > /dev/null"]
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            failureThreshold: 3
+
+      # ── Graceful termination window ──────────────────────────────────────
+      terminationGracePeriodSeconds: 30
+
+      volumes:
+        - name: tls-config
+          secret:
+            secretName: illumina-jms-tls
+            items:
+              - key: keystore.jks
+                path: keystore.jks
+              - key: truststore.jks
+                path: truststore.jks
+              - key: ccdt.json
+                path: ccdt.json

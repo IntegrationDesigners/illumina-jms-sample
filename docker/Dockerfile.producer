@@ -1,0 +1,70 @@
+# ── Stage 1: build ───────────────────────────────────────────────────────────
+FROM maven:3.9-eclipse-temurin-17 AS build
+
+WORKDIR /build
+COPY pom.xml .
+# Download dependencies in a separate layer so they are cached between builds
+RUN mvn dependency:go-offline -q
+
+COPY src/ src/
+RUN mvn package -q -DskipTests
+
+# ── Stage 2: runtime ─────────────────────────────────────────────────────────
+FROM ibm-semeru-runtimes:open-17-jre
+
+LABEL org.opencontainers.image.title="illumina-jms-producer" \
+      org.opencontainers.image.description="Illumina JMS demo – message producer" \
+      org.opencontainers.image.base.name="ibm-semeru-runtimes:open-17-jre"
+
+WORKDIR /app
+
+# Copy the fat JAR produced by maven-assembly-plugin
+COPY --from=build /build/target/illumina-jms.jar /app/illumina-jms.jar
+
+# ── mqclient.ini: force OutboundSNI=HOSTNAME ─────────────────────────────────
+# This makes the TLS SNI extension send the real queue manager hostname.
+RUN mkdir -p /app/config && \
+    printf '[SSL]\nOutboundSNI=HOSTNAME\n' > /app/config/mqclient.ini && \
+    # Non-root user required by OpenShift
+    useradd -u 1001 -r -g 0 -s /sbin/nologin appuser && \
+    chown -R 1001:0 /app && \
+    chmod -R g=u /app
+
+# ── Environment ──────────────────────────────────────────────────────────────
+# JAVA_OPTS:         extra JVM flags injected at runtime (e.g. -Xmx512m)
+# MQ_TRACE_ENABLED:  set to "false" to disable MQ client tracing
+# MQCLNTCF:          path to mqclient.ini consumed by the MQ client library
+ENV JAVA_OPTS="" \
+    MQ_TRACE_ENABLED="true" \
+    MQCLNTCF=/app/config/mqclient.ini
+
+USER 1001
+
+# ── TLS keystores and CCDT are mounted at runtime via an OpenShift Secret ────
+#    /app/config/keystore.jks
+#    /app/config/truststore.jks
+#    /app/config/ccdt.json
+
+ENTRYPOINT ["sh", "-c", \
+  "echo '==> Checking required mounted files...' && \
+   missing=0 && \
+   for f in /app/config/keystore.jks /app/config/truststore.jks /app/config/ccdt.json; do \
+     if [ ! -f \"$f\" ]; then echo \"ERROR: missing required file: $f\"; missing=1; fi; \
+   done && \
+   [ $missing -eq 0 ] || exit 1 && \
+   echo '==> All required files present. Starting producer...' && \
+   exec java $JAVA_OPTS \
+   -Djavax.net.ssl.keyStore=/app/config/keystore.jks \
+   -Djavax.net.ssl.keyStorePassword=${SSL_KEYSTORE_PASSWORD} \
+   -Djavax.net.ssl.trustStore=/app/config/truststore.jks \
+   -Djavax.net.ssl.trustStorePassword=${SSL_TRUSTSTORE_PASSWORD} \
+   -Djavax.net.ssl.keyStoreType=JKS \
+   -Djavax.net.ssl.trustStoreType=JKS \
+   -Dcom.ibm.mq.cfg.useIBMCipherMappings=false \
+   $([ \"$MQ_TRACE_ENABLED\" = 'true' ] && echo \
+     '-Dcom.ibm.msg.client.commonservices.trace.status=ON \
+      -Dcom.ibm.msg.client.commonservices.trace.outputName=stdout \
+      -Dcom.ibm.msg.client.commonservices.trace.level=4 \
+      -Dcom.ibm.msg.client.commonservices.trace.include=com.ibm.mq.jmqi.remote') \
+   -jar /app/illumina-jms.jar \
+   com.illumina.demo.Producer ${PRODUCER_NAME:-illumina-producer}"]
