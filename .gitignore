@@ -32,3 +32,9 @@ bindings/
 # ── OS / editor noise ─────────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
+
+# ── Generated secret files (contain base64-encoded credentials) ─────────────
+*-secret.yaml
+
+# ── Generated secret files (contain base64-encoded credentials) ─────────────
+*-secret.yaml
