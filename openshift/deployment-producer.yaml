@@ -39,7 +39,7 @@ spec:
               value: "illumina-producer"
 
           volumeMounts:
-            - name: tls-config
+            - name: jms-config
               mountPath: /app/config
               readOnly: true
 
@@ -69,9 +69,9 @@ spec:
       terminationGracePeriodSeconds: 30
 
       volumes:
-        - name: tls-config
+        - name: jms-config
           secret:
-            secretName: illumina-jms-tls
+            secretName: jms-config
             items:
               - key: keystore.jks
                 path: keystore.jks

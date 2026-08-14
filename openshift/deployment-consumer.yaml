@@ -28,16 +28,16 @@ spec:
             - name: SSL_KEYSTORE_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: illumina-jms-tls
+                  name: jms-config
                   key: keystore-password
             - name: SSL_TRUSTSTORE_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: illumina-jms-tls
+                  name: jms-config
                   key: truststore-password
 
           volumeMounts:
-            - name: tls-config
+            - name: jms-config
               mountPath: /app/config
               readOnly: true
 
@@ -66,9 +66,9 @@ spec:
       terminationGracePeriodSeconds: 30
 
       volumes:
-        - name: tls-config
+        - name: jms-config
           secret:
-            secretName: illumina-jms-tls
+            secretName: jms-config
             items:
               - key: keystore.jks
                 path: keystore.jks
