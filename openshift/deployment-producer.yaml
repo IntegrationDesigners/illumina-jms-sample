@@ -21,7 +21,7 @@ spec:
         runAsUser: 1001
       containers:
         - name: producer
-          image: <YOUR_IMAGE_REGISTRY>/illumina-jms-producer:latest  # ← set your registry
+          image: ghcr.io/integrationdesigners/illumina-jms-producer:latest
           imagePullPolicy: Always
 
           env:
