@@ -62,6 +62,7 @@ ENTRYPOINT ["sh", "-c", \
    -Djavax.net.ssl.keyStoreType=JKS \
    -Djavax.net.ssl.trustStoreType=JKS \
    -Dcom.ibm.mq.cfg.useIBMCipherMappings=false \
+   -Dcom.ibm.mq.cfg.SSL.outboundSNI=HOSTNAME \
    $([ \"$MQ_TRACE_ENABLED\" = 'true' ] && echo \
      '-Dcom.ibm.msg.client.commonservices.trace.status=ON \
       -Dcom.ibm.msg.client.commonservices.trace.outputName=stdout \
