@@ -22,9 +22,10 @@ WORKDIR /app
 COPY --from=build /build/target/illumina-jms.jar /app/illumina-jms.jar
 
 # ── mqclient.ini: force OutboundSNI=HOSTNAME ─────────────────────────────────
-# This makes the TLS SNI extension send the real queue manager hostname.
+# Written to /app/mqclient.ini — NOT inside /app/config which is volume-mounted
+# at runtime (a mount replaces the whole directory, hiding any baked-in files).
 RUN mkdir -p /app/config && \
-    printf '[SSL]\nOutboundSNI=HOSTNAME\n' > /app/config/mqclient.ini && \
+    printf '[SSL]\nOutboundSNI=HOSTNAME\n' > /app/mqclient.ini && \
     # Non-root user required by OpenShift
     useradd -u 1001 -r -g 0 -s /sbin/nologin appuser && \
     chown -R 1001:0 /app && \
@@ -33,10 +34,10 @@ RUN mkdir -p /app/config && \
 # ── Environment ──────────────────────────────────────────────────────────────
 # JAVA_OPTS:         extra JVM flags injected at runtime (e.g. -Xmx512m)
 # MQ_TRACE_ENABLED:  set to "false" to disable MQ client tracing
-# MQCLNTCF:          path to mqclient.ini consumed by the MQ client library
+# MQCLNTCF:          path to mqclient.ini — outside /app/config so it survives the mount
 ENV JAVA_OPTS="" \
     MQ_TRACE_ENABLED="true" \
-    MQCLNTCF=/app/config/mqclient.ini
+    MQCLNTCF=/app/mqclient.ini
 
 USER 1001
 
