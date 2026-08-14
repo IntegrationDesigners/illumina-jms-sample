@@ -18,6 +18,8 @@ spec:
       securityContext:
         runAsNonRoot: true
         runAsUser: 1001
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: consumer
           image: ghcr.io/integrationdesigners/illumina-jms-consumer:latest
@@ -35,6 +37,10 @@ spec:
                   name: jms-config
                   key: truststore-password
 
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
           volumeMounts:
             - name: jms-config
               mountPath: /app/config
