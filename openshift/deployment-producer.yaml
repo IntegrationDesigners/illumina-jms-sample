@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: illumina-jms-producer
+  namespace: illumina-jms
   labels:
     app: illumina-jms-producer
     app.kubernetes.io/part-of: illumina-jms
@@ -17,33 +18,28 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
-        seccompProfile:
-          type: RuntimeDefault
+        runAsUser: 1001
       containers:
         - name: producer
-          image: ghcr.io/integrationdesigners/illumina-jms-producer:latest
+          image: ghcr.io/integrationdesigners/illumina-jms-producer:latest  # ← set your registry
           imagePullPolicy: Always
 
           env:
             - name: SSL_KEYSTORE_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: jms-config
+                  name: illumina-jms-tls
                   key: keystore-password
             - name: SSL_TRUSTSTORE_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: jms-config
+                  name: illumina-jms-tls
                   key: truststore-password
             - name: PRODUCER_NAME
               value: "illumina-producer"
 
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop: ["ALL"]
           volumeMounts:
-            - name: jms-config
+            - name: tls-config
               mountPath: /app/config
               readOnly: true
 
@@ -73,9 +69,9 @@ spec:
       terminationGracePeriodSeconds: 30
 
       volumes:
-        - name: jms-config
+        - name: tls-config
           secret:
-            secretName: jms-config
+            secretName: illumina-jms-tls
             items:
               - key: keystore.jks
                 path: keystore.jks
